@@ -225,7 +225,11 @@
                     warning("first invocation of 'ITER()' returned NULL")
                 break
             }
-            task <- .EXEC(total + 1L, .workerLapply, ARGFUN(value, seed))
+            fun <- function(...){
+              BiocParallel:::.workerLapply(...)
+            }
+            environment(fun) <- getNamespace("base")
+            task <- .EXEC(total + 1L, fun, ARGFUN(value, seed))
             .manager_send(manager, task)
             seed <- .rng_iterate_substream(seed, length(value))
             total <- total + 1L
