@@ -186,14 +186,12 @@ setMethod(
     ".manager_send", "ANY",
     function(manager, value)
 {
-    tic()
     availability <- manager$availability
     stopifnot(length(availability) >=0)
     ## send the job to the next available worker
     worker <- names(availability)[1]
     .send_to(manager$backend, as.integer(worker), value)
     rm(list = worker, envir = availability)
-    toc()
 })
 
 setMethod(

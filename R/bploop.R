@@ -206,6 +206,15 @@
             OPTIONS = OPTIONS, BPRNGSEED = seed
         )
 
+    eval(
+      parse(
+        text="
+          .workerLapply <- function(...) BiocParallel:::.workerLapply(...)
+          environment(.workerLapply) <- getNamespace('base')
+        "
+      )
+    )
+
     total <- 0L
     running <- 0L
     value <- NULL
@@ -225,11 +234,7 @@
                     warning("first invocation of 'ITER()' returned NULL")
                 break
             }
-            fun <- function(...){
-              BiocParallel:::.workerLapply(...)
-            }
-            environment(fun) <- getNamespace("base")
-            task <- .EXEC(total + 1L, fun, ARGFUN(value, seed))
+            task <- .EXEC(total + 1L, .workerLapply, ARGFUN(value, seed))
             .manager_send(manager, task)
             seed <- .rng_iterate_substream(seed, length(value))
             total <- total + 1L
