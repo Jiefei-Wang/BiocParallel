@@ -1,5 +1,5 @@
 .bpinit <-
-    function(manager, FUN, BPPARAM, BPREDO = list(), ...)
+    function(manager, BPPARAM, ...)
 {
     ## Conditions for starting a cluster, or falling back to (and
     ## starting) a SerialParam
@@ -38,8 +38,8 @@
     }
 
     ## FUN
-    FUN <- .composeTry(
-        FUN, bplog(BPPARAM), bpstopOnError(BPPARAM),
+    OPTIONS <- .workerOptions(
+        bplog(BPPARAM), bpstopOnError(BPPARAM),
         timeout=bptimeout(BPPARAM), exportglobals=bpexportglobals(BPPARAM),
         force.GC = bpforceGC(BPPARAM)
     )
@@ -47,9 +47,8 @@
     ## iteration
     res <- bploop(
         manager, # dispatch
-        FUN = FUN,
         BPPARAM = BPPARAM,
-        BPREDO = BPREDO,
+        OPTIONS = OPTIONS,
         ...
     )
 

@@ -1,93 +1,3 @@
-### =========================================================================
-### Low-level cluster utilities
-### -------------------------------------------------------------------------
-
-### Support for SOCK, MPI and FORK connections.
-### Derived from snow version 0.3-13 by Luke Tierney
-### Derived from parallel version 2.16.0 by R Core Team
-
-.EXEC <-
-    function(tag, fun, args)
-{
-    list(type="EXEC", data=list(fun=fun, args=args, tag=tag))
-}
-
-.VALUE <-
-    function(tag, value, success, time, log, sout)
-{
-    list(type = "VALUE", tag = tag, value = value, success = success,
-         time = time, log = log, sout = sout)
-}
-
-.DONE <-
-    function()
-{
-    list(type = "DONE")
-}
-
-### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-### Worker loop used by SOCK, MPI and FORK.  Error handling is done in
-### .composeTry.
-
-.bpworker_EXEC <- function(msg, sink.sout = TRUE)
-{
-    ## need local handler for worker read/send errors
-    if (sink.sout) {
-        on.exit({
-            sink(NULL, type="message")
-            sink(NULL, type="output")
-            close(file)
-        })
-        file <- rawConnection(raw(), "r+")
-        sink(file, type="message")
-        sink(file, type="output")
-    }
-
-    t1 <- proc.time()
-    value <- tryCatch({
-        do.call(msg$data$fun, msg$data$args)
-    }, error=function(e) {
-        ## return as 'list()' because msg$data$fun has lapply semantics
-        list(.error_worker_comm(e, "worker evaluation failed"))
-    })
-    t2 <- proc.time()
-
-    if (sink.sout) {
-        sout <- rawToChar(rawConnectionValue(file))
-        if (!nchar(sout)) sout <- NULL
-    } else {
-        sout <- NULL
-    }
-
-    success <- !(inherits(value, "bperror") || !all(bpok(value)))
-    log <- .log_buffer_get()
-
-    value <- .VALUE(
-        msg$data$tag, value, success, t2 - t1, log, sout
-    )
-}
-
-.bpworker_impl <- function(worker)
-{
-    repeat {
-        tryCatch({
-            msg <- .recv(worker)
-            if (inherits(msg, "error"))
-                ## FIXME: try to return error to manager
-                break                   # lost socket connection?
-            if (msg$type == "DONE") {
-                .close(worker)
-                break
-            } else if (msg$type == "EXEC") {
-                value <- .bpworker_EXEC(msg)
-                .send(worker, value)
-            }
-        }, interrupt = function(e) {
-            NULL
-        })
-    }
-}
-
 ### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ### Manager loop used by SOCK, MPI and FORK
 
@@ -105,10 +15,10 @@
         .reducer_add(reducer, njob, value)
         .manager_log(BPPARAM, njob, d)
         .manager_result_save(BPPARAM, njob, reducer$value())
-        
+
         ## progress
         progress$step(length(value))
-        
+
         ## whether the result is ok, or to treat the failure as success
         success[i] <- !bpstopOnError(BPPARAM) || d$value$success
     }
@@ -267,7 +177,8 @@
 ## - FUN: A function that will be evaluated in the worker
 ## - ARGS: the arguments to FUN
 .bploop_impl <-
-    function(ITER, FUN, ARGS, BPPARAM, BPREDO, reducer, progress.length)
+    function(ITER, FUN, ARGS, BPPARAM, BPREDO,
+             OPTIONS, reducer, progress.length)
 {
     cl <- bpbackend(BPPARAM)
 
@@ -290,9 +201,9 @@
     progress$init(progress.length)
 
     ARGFUN <- function(X, seed)
-        c(
-            list(X=X), list(FUN=FUN), ARGS,
-            list(BPRNGSEED = seed)
+        list(
+            X=X , FUN=FUN , ARGS = ARGS,
+            OPTIONS = OPTIONS, BPRNGSEED = seed
         )
 
     total <- 0L
@@ -314,8 +225,8 @@
                     warning("first invocation of 'ITER()' returned NULL")
                 break
             }
-            value_ <- .EXEC(total + 1L, .rng_lapply, ARGFUN(value, seed))
-            .manager_send(manager, value_)
+            task <- .EXEC(total + 1L, .workerLapply, ARGFUN(value, seed))
+            .manager_send(manager, task)
             seed <- .rng_iterate_substream(seed, length(value))
             total <- total + 1L
             running <- running + 1L
@@ -361,7 +272,7 @@ bploop <- function(manager, ...)
 ## X: the loop value after division
 ## ARGS: The function arguments for `FUN`
 bploop.lapply <-
-    function(manager, X, FUN, ARGS, BPPARAM, BPREDO = list(), ...)
+    function(manager, X, FUN, ARGS, BPPARAM, BPREDO = list(), OPTIONS, ...)
 {
     ## which need to be redone?
     redo_index <- .redo_index(X, BPREDO)
@@ -380,6 +291,7 @@ bploop.lapply <-
         ARGS = ARGS,
         BPPARAM = BPPARAM,
         BPREDO = BPREDO,
+        OPTIONS = OPTIONS,
         reducer = reducer,
         progress.length = length(redo_index)
     )
@@ -401,7 +313,7 @@ bploop.lapply <-
 ## TODO: support for BPREDO
 bploop.iterate <-
     function(
-        manager, ITER, FUN, ARGS, BPPARAM, REDUCE, BPREDO,
+        manager, ITER, FUN, ARGS, BPPARAM, REDUCE, BPREDO, OPTIONS,
         init, reduce.in.order, ...
     )
 {
@@ -414,6 +326,7 @@ bploop.iterate <-
         ARGS = ARGS,
         BPPARAM = BPPARAM,
         BPREDO = BPREDO,
+        OPTIONS = OPTIONS,
         reducer = reducer
     )
 }
