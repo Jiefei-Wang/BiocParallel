@@ -244,9 +244,9 @@ setMethod("bpstart", "SnowParam",
             nnodes
         } else cargs$spec[seq_len(nnodes)]
         if (is.null(cargs$snowlib))
-            cargs$snowlib <- find.package("BiocParallel")
+            cargs$snowlib <- system.file("", package = "BiocParallel")
         if (!is.null(cargs$useRscript) && !cargs$useRscript)
-            cargs$scriptdir <- find.package("BiocParallel")
+            cargs$scriptdir <- system.file("", package = "BiocParallel")
 
         if (x$.clusterargs$type == "SOCK") {
             cargs$master <- .hostname(x)
