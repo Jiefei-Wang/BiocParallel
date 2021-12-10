@@ -118,6 +118,7 @@ setMethod(
     ".send_to", "ANY",
     function(backend, node, value)
 {
+    if(is.null(value)) browser()
     parallel:::sendData(backend[[node]], value)
     TRUE
 })

@@ -1,25 +1,25 @@
 ### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ### Utils
-.EXEC_static <- function(EXEC) 
+.EXEC_static <- function(EXEC)
 {
     if (EXEC$static.fun)
         fun <- EXEC$fun
     else
         fun <- NULL
-    
-    if (length(EXEC$static.args) && 
+
+    if (length(EXEC$static.args) &&
         all(EXEC$static.args%in%names(EXEC$args)))
         args <- EXEC$args[EXEC$static.args]
     else
         args <- NULL
-    
+
     if (!is.null(fun) || !is.null(args))
         list(fun = fun, args = args)
-    else 
+    else
         NULL
 }
 
-.EXEC_dynamic <- function(EXEC) 
+.EXEC_dynamic <- function(EXEC)
 {
     if (EXEC$static.fun)
         EXEC$fun <- NULL
@@ -50,13 +50,13 @@
 ### Derived from snow version 0.3-13 by Luke Tierney
 ### Derived from parallel version 2.16.0 by R Core Team
 .EXEC <-
-    function(tag, fun, args, static.fun = FALSE, static.args = NULL, 
+    function(tag, fun, args, static.fun = FALSE, static.args = NULL,
              static.EXEC = NULL, dynamic.EXEC = NULL)
 {
-    if(is.null(static.EXEC) && is.null(static.EXEC)) {
-        list(type = "EXEC", tag = tag, fun = fun, 
-             args = args, 
-             static.fun = static.fun, 
+    if(is.null(static.EXEC) && is.null(dynamic.EXEC)) {
+        list(type = "EXEC", tag = tag, fun = fun,
+             args = args,
+             static.fun = static.fun,
              static.args = static.args)
     } else {
         EXEC <- dynamic.EXEC
@@ -150,7 +150,8 @@
     force.GC <- OPTIONS$force.GC
     globalOptions <- OPTIONS$globalOptions
 
-    SEED <- .rng_reset_generator("L'Ecuyer-CMRG", SEED)$seed
+    if (!is.null(SEED))
+        SEED <- .rng_reset_generator("L'Ecuyer-CMRG", SEED)$seed
 
     function(...) {
         if(timeout != .Machine$integer.max){
@@ -214,7 +215,7 @@
         sink(file, type="message")
         sink(file, type="output")
     }
-    
+
     t1 <- proc.time()
     value <- tryCatch({
         do.call(msg$fun, c(msg$args, msg$static_args))
