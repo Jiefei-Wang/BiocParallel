@@ -382,10 +382,9 @@ setMethod(
     if (value$type == "EXEC") {
         if (manager$initialized[id])
             value <- .EXEC_dynamic(value)
-        else 
-            manager$initialized[id] <- TRUE 
+        else
+            manager$initialized[id] <- TRUE
     }
-    # message(length(serialize(value, NULL)))
     .send_to(manager$backend, as.integer(worker), value)
     rm(list = worker, envir = availability)
     manager
@@ -393,20 +392,24 @@ setMethod(
 
 setMethod(
     ".manager_cleanup", "SOCKmanager",
-    function(manager) 
+    function(manager)
 {
     manager <- callNextMethod()
     manager$initialized <- rep(FALSE, manager$capacity)
     value <- .EXEC(tag = NULL, .cleanup_EXEC_static, args = NULL)
     .send_all(manager$backend, value)
-    msg <- .revc_all(manager$backend)
+    msg <- .recv_all(manager$backend)
     manager
 })
 
-setMethod(".recv", "SOCKnode", 
+## The worker class of SnowParam
+setOldClass(c("SOCK0node", "SOCKnode"))
+setMethod(".recv", "SOCKnode",
     function(worker)
 {
     msg <- callNextMethod()
+    if (inherits(msg, "error"))
+      return(msg)
     ## read/write the static value(if any)
     if (msg$type == "EXEC")
       msg <- .load_EXEC_static(msg)

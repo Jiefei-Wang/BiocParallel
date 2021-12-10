@@ -207,7 +207,7 @@
     init_seed <- .redo_seed(BPREDO)
     if (is.null(init_seed)) {
         seed <- .RNGstream(BPPARAM)
-        on.exit(.RNGstream(BPPARAM) <- seed)
+        on.exit(.RNGstream(BPPARAM) <- seed, TRUE)
         init_seed <- seed
     } else {
         seed <- init_seed
@@ -220,7 +220,7 @@
     progress$init(progress.length)
 
     .workerLapply <- funcFactory("BiocParallel:::.workerLapply")
-    
+
     ARGFUN <- function(X, seed)
         list(
             X=X , FUN=FUN , ARGS = ARGS,
@@ -248,7 +248,7 @@
                 break
             }
             args <- ARGFUN(value, seed)
-            task <- .EXEC(total + 1L, .workerLapply, 
+            task <- .EXEC(total + 1L, .workerLapply,
                           args = args,
                           static.fun = TRUE,
                           static.args = static.args)
