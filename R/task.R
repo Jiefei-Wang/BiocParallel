@@ -3,15 +3,14 @@
 .EXEC_static <- function(EXEC)
 {
     if (EXEC$static.fun)
-        fun <- EXEC$fun
+        fun <- EXEC$data$fun
     else
         fun <- NULL
 
-    if (length(EXEC$static.args) &&
-        all(EXEC$static.args%in%names(EXEC$args)))
-        args <- EXEC$args[EXEC$static.args]
-    else
-        args <- NULL
+    if (all(EXEC$static.args%in%names(EXEC$data$args))) {
+        args <- EXEC$data$args[EXEC$static.args]
+        if (!length(args)) args <- NULL
+    }
 
     if (!is.null(fun) || !is.null(args))
         list(fun = fun, args = args)
@@ -22,27 +21,23 @@
 .EXEC_dynamic <- function(EXEC)
 {
     if (EXEC$static.fun)
-        EXEC$fun <- NULL
+        EXEC$data$fun <- NULL
     if (length(EXEC$static.args))
-        EXEC$args[EXEC$static.args] <- NULL
+        EXEC$data$args[EXEC$static.args] <- NULL
+
+    EXEC$dynamic.only <- TRUE
     EXEC
 }
 
-## read/write the static value
-.load_EXEC_static <- function(EXEC) {
-    static.EXEC <- .EXEC_static(EXEC)
-    if(is.null(static.EXEC)) {
-        static.EXEC <- options("BIOCPARALLEL_STATIC_EXEC")[[1]]
-        EXEC <- .EXEC(dynamic.EXEC = EXEC, static.EXEC = static.EXEC)
-    } else {
-        options(BIOCPARALLEL_STATIC_EXEC = static.EXEC)
+.remake_EXEC <- function(EXEC, static.EXEC = NULL){
+    if (EXEC$dynamic.only) {
+        EXEC$data$fun <- static.EXEC$fun
+        EXEC$data$args <- c(EXEC$data$args, static.EXEC$args)
     }
     EXEC
 }
 
-.cleanup_EXEC_static <- function(){
-    options(BIOCPARALLEL_STATIC_EXEC = NULL)
-}
+
 ### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ### Worker commands
 
@@ -50,22 +45,12 @@
 ### Derived from snow version 0.3-13 by Luke Tierney
 ### Derived from parallel version 2.16.0 by R Core Team
 .EXEC <-
-    function(tag, fun, args, static.fun = FALSE, static.args = NULL,
-             static.EXEC = NULL, dynamic.EXEC = NULL)
+    function(tag, fun, args, static.fun = TRUE, static.args = NULL)
 {
-    if(is.null(static.EXEC) && is.null(dynamic.EXEC)) {
-        list(type = "EXEC", tag = tag, fun = fun,
-             args = args,
-             static.fun = static.fun,
-             static.args = static.args)
-    } else {
-        EXEC <- dynamic.EXEC
-        if (EXEC$static.fun)
-            EXEC$fun <- static.EXEC$fun
-        if(length(EXEC$static.args))
-            EXEC$args[EXEC$static.args] <- static.EXEC$args[EXEC$static.args]
-        EXEC
-    }
+    list(type = "EXEC", data = list(tag = tag,
+         fun = fun, args = args),
+         static.fun = static.fun,
+         static.args = static.args)
 }
 
 .VALUE <-
@@ -218,7 +203,7 @@
 
     t1 <- proc.time()
     value <- tryCatch({
-        do.call(msg$fun, c(msg$args, msg$static_args))
+        do.call(msg$data$fun, msg$data$args)
     }, error=function(e) {
         ## return as 'list()' because msg$fun has lapply semantics
         list(.error_worker_comm(e, "worker evaluation failed"))
@@ -236,7 +221,7 @@
     log <- .log_buffer_get()
 
     value <- .VALUE(
-        msg$tag, value, success, t2 - t1, log, sout
+        msg$data$tag, value, success, t2 - t1, log, sout
     )
 }
 
