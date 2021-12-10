@@ -121,6 +121,7 @@ bprunMPIworker <- function() {
         .remake_EXEC(EXEC, static.EXEC)
     } else {
         options(BIOCPARALLEL_STATIC_EXEC = static.EXEC)
+        EXEC
     }
 }
 

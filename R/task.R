@@ -7,9 +7,11 @@
     else
         fun <- NULL
 
-    if (all(EXEC$static.args%in%names(EXEC$data$args))) {
+    if (all(EXEC$static.args %in% names(EXEC$data$args))) {
         args <- EXEC$data$args[EXEC$static.args]
         if (!length(args)) args <- NULL
+    } else {
+        args <- NULL
     }
 
     if (!is.null(fun) || !is.null(args))
@@ -30,7 +32,7 @@
 }
 
 .remake_EXEC <- function(EXEC, static.EXEC = NULL){
-    if (EXEC$dynamic.only) {
+    if (isTRUE(EXEC$dynamic.only)) {
         EXEC$data$fun <- static.EXEC$fun
         EXEC$data$args <- c(EXEC$data$args, static.EXEC$args)
     }
@@ -45,7 +47,7 @@
 ### Derived from snow version 0.3-13 by Luke Tierney
 ### Derived from parallel version 2.16.0 by R Core Team
 .EXEC <-
-    function(tag, fun, args, static.fun = TRUE, static.args = NULL)
+    function(tag, fun, args, static.fun = FALSE, static.args = NULL)
 {
     list(type = "EXEC", data = list(tag = tag,
          fun = fun, args = args),
@@ -178,6 +180,7 @@
 {
     state <- .rng_get_generator()
     on.exit(.rng_reset_generator(state$kind, state$seed))
+    ## FUN is not compiled when using MulticoreParam
     FUN <- compiler::cmpfun(FUN)
     composeFunc <- .composeTry(FUN, OPTIONS, BPRNGSEED)
     args <- c(list(X = X, FUN = composeFunc), ARGS)
