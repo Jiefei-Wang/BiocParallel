@@ -396,7 +396,7 @@ setMethod(
 {
     manager <- callNextMethod()
     manager$initialized <- rep(FALSE, manager$capacity)
-    value <- .EXEC(tag = NULL, .cleanup_EXEC_static, args = NULL)
+    value <- .EXEC(tag = NULL, .clean_EXEC_static, args = NULL)
     .send_all(manager$backend, value)
     msg <- .recv_all(manager$backend)
     manager
