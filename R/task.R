@@ -134,6 +134,7 @@
 {
     state <- .rng_get_generator()
     on.exit(.rng_reset_generator(state$kind, state$seed))
+    FUN <- compiler::cmpfun(FUN)
     composeFunc <- .composeTry(FUN, OPTIONS, BPRNGSEED)
     args <- c(list(X = X, FUN = composeFunc), ARGS)
     do.call(lapply, args)
