@@ -5,9 +5,10 @@
 ### Derived from snow version 0.3-13 by Luke Tierney
 ### Derived from parallel version 2.16.0 by R Core Team
 .EXEC <-
-    function(tag, fun, args)
+    function(tag, fun, args, static_args = NULL)
 {
-    list(type="EXEC", data=list(fun=fun, args=args, tag=tag))
+    list(type="EXEC", tag=tag, fun=fun, 
+         args=args, static_args = static_args)
 }
 
 .VALUE <-
@@ -156,12 +157,23 @@
         sink(file, type="message")
         sink(file, type="output")
     }
-
+    
+    ## Cache the static value(if any)
+    if (is.null(msg$static_args))
+        msg$static_args <- options("BP_STATIC_CACHE")[[1]]
+    else
+        options("BP_STATIC_CACHE" = msg$static_args)
+    
+    if (is.null(msg$fun))
+        msg$fun <- options("BP_FUN_CACHE")[[1]]
+    else
+        options("BP_FUN_CACHE" = msg$fun)
+    
     t1 <- proc.time()
     value <- tryCatch({
-        do.call(msg$data$fun, msg$data$args)
+        do.call(msg$fun, c(msg$args, msg$static_args))
     }, error=function(e) {
-        ## return as 'list()' because msg$data$fun has lapply semantics
+        ## return as 'list()' because msg$fun has lapply semantics
         list(.error_worker_comm(e, "worker evaluation failed"))
     })
     t2 <- proc.time()
@@ -177,7 +189,7 @@
     log <- .log_buffer_get()
 
     value <- .VALUE(
-        msg$data$tag, value, success, t2 - t1, log, sout
+        msg$tag, value, success, t2 - t1, log, sout
     )
 }
 

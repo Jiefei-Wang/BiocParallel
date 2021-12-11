@@ -356,6 +356,50 @@ setAs("SOCKcluster", "SnowParam",
     do.call(.SnowParam, prototype)
 })
 
+## manager interface
+setOldClass(c("SOCKmanager"))
+setMethod(
+    ".manager", "SOCKcluster",
+    function(backend)
+{
+    manager <- callNextMethod()
+    manager$initialized <- rep(FALSE, manager$capacity)
+    class(manager) <- "SOCKmanager"
+    manager
+})
+
+setMethod(
+  ".manager_send", "SOCKmanager",
+  function(manager, value)
+{
+    availability <- manager$availability
+    stopifnot(length(availability) >=0)
+    ## send the job to the next available worker
+    worker <- names(availability)[1]
+    id <- as.integer(worker)
+    if (value$type == "EXEC") {
+        if (manager$initialized[id]) {
+            value$static_args <- NULL
+            value$fun <- NULL
+        } else { 
+            manager$initialized[id] <- TRUE 
+        }
+    }
+    # message(length(serialize(value, NULL)))
+    .send_to(manager$backend, as.integer(worker), value)
+    rm(list = worker, envir = availability)
+    manager
+})
+
+setMethod(
+    ".manager_cleanup", "SOCKmanager",
+    function(manager) {
+        manager <- callNextMethod()
+        manager$initialized <- rep(FALSE, manager$capacity)
+        manager
+    }
+)
+
 ### MPIcluster
 
 setOldClass(c("spawnedMPIcluster", "MPIcluster", "cluster"))
