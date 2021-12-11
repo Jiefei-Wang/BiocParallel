@@ -189,3 +189,18 @@
     )
     stop(msg, call. = FALSE)
 }
+
+funcFactory <- function(funcName){
+    template <- 
+        "
+        FUN_ <- function(...) %funcName%(...)
+        environment(FUN_) <- getNamespace('base')
+        FUN_
+        "
+    txt <- gsub("%funcName%", funcName, template ,fixed = TRUE)
+    eval(
+        parse(
+            text=txt
+        )
+    )
+}

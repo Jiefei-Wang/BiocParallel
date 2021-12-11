@@ -175,10 +175,10 @@ setMethod(
 {
     manager <- new.env(parent = emptyenv())
     manager$backend <- backend
-    availability <- rep(list(TRUE), length(manager$backend))
+    manager$capacity <- length(manager$backend)
+    availability <- rep(list(TRUE), manager$capacity)
     names(availability) <- as.character(seq_along(manager$backend))
     manager$availability <- as.environment(availability)
-    manager$capacity <- length(manager$backend)
     manager
 })
 
