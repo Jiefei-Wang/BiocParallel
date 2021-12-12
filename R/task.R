@@ -1,14 +1,46 @@
 ### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+### Utils
+## Remove the static data from EXEC
+.strip_EXEC <- function(EXEC) {
+    if (EXEC$static.fun)
+        EXEC$fun <- NULL
+    if (length(EXEC$static.args))
+        EXEC$args[EXEC$static.args] <- NULL
+    EXEC
+}
+
+## read/write the static value
+.load_EXEC_static <- function(EXEC) {
+    if (EXEC$static.fun) {
+        if (is.null(EXEC$fun))
+            EXEC$fun <- options("BP_STATIC_FUN")[[1]]
+        else
+            options("BP_STATIC_FUN" = EXEC$fun)
+    }
+    
+    if (length(EXEC$static.args)) {
+        if (is.null(EXEC$args[[EXEC$static.args[[1]]]]))
+            EXEC$args[EXEC$static.args] <- options("BP_STATIC_ARGS")[[1]]
+        else
+            options("BP_STATIC_ARGS" = EXEC$args[EXEC$static.args])
+    }
+    EXEC
+}
+
+
+### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ### Worker commands
 
 ### Support for SOCK, MPI and FORK connections.
 ### Derived from snow version 0.3-13 by Luke Tierney
 ### Derived from parallel version 2.16.0 by R Core Team
 .EXEC <-
-    function(tag, fun, args, static_args = NULL)
+    function(tag, fun, args, static.fun = FALSE, static.args = NULL)
 {
-    list(type="EXEC", tag=tag, fun=fun, 
-         args=args, static_args = static_args)
+    list(type = "EXEC", tag = tag, fun = fun, 
+         args = args, 
+         static.fun = static.fun, 
+         static.args = static.args)
 }
 
 .VALUE <-
@@ -58,7 +90,7 @@
         log = log,
         stop.on.error = stop.on.error,
         as.error = as.error,
-        timeout=timeout,
+        timeout = timeout,
         force.GC = force.GC,
         globalOptions = globalOptions
     )
@@ -158,16 +190,8 @@
         sink(file, type="output")
     }
     
-    ## Cache the static value(if any)
-    if (is.null(msg$static_args))
-        msg$static_args <- options("BP_STATIC_CACHE")[[1]]
-    else
-        options("BP_STATIC_CACHE" = msg$static_args)
-    
-    if (is.null(msg$fun))
-        msg$fun <- options("BP_FUN_CACHE")[[1]]
-    else
-        options("BP_FUN_CACHE" = msg$fun)
+    ## read/write the static value(if any)
+    msg <- .load_EXEC_static(msg)
     
     t1 <- proc.time()
     value <- tryCatch({

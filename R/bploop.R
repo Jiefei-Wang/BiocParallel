@@ -200,12 +200,14 @@
     on.exit(progress$term(), TRUE)
     progress$init(progress.length)
 
-    static_args <- list(
-        FUN=FUN , ARGS = ARGS,
-        OPTIONS = OPTIONS
-    )
-
     .workerLapply <- funcFactory("BiocParallel:::.workerLapply")
+    
+    ARGFUN <- function(X, seed)
+        list(
+            X=X , FUN=FUN , ARGS = ARGS,
+            OPTIONS = OPTIONS, BPRNGSEED = seed
+        )
+    static.args <- c("FUN", "ARGS", "OPTIONS")
 
     total <- 0L
     running <- 0L
@@ -226,9 +228,11 @@
                     warning("first invocation of 'ITER()' returned NULL")
                 break
             }
+            args <- ARGFUN(value, seed)
             task <- .EXEC(total + 1L, .workerLapply, 
-                          args = list(X = value, BPRNGSEED = seed),
-                          static_args = static_args)
+                          args = args,
+                          static.fun = TRUE,
+                          static.args = static.args)
             .manager_send(manager, task)
             seed <- .rng_iterate_substream(seed, length(value))
             total <- total + 1L
