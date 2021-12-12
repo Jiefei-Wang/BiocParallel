@@ -357,7 +357,7 @@ setAs("SOCKcluster", "SnowParam",
 })
 
 ## manager interface
-setOldClass(c("SOCKmanager"))
+setOldClass("SOCKmanager")
 setMethod(
     ".manager", "SOCKcluster",
     function(backend)
@@ -378,12 +378,10 @@ setMethod(
     worker <- names(availability)[1]
     id <- as.integer(worker)
     if (value$type == "EXEC") {
-        if (manager$initialized[id]) {
-            value$static_args <- NULL
-            value$fun <- NULL
-        } else { 
+        if (manager$initialized[id])
+            value <- .strip_EXEC(value)
+        else 
             manager$initialized[id] <- TRUE 
-        }
     }
     # message(length(serialize(value, NULL)))
     .send_to(manager$backend, as.integer(worker), value)
