@@ -356,7 +356,9 @@ setAs("SOCKcluster", "SnowParam",
     do.call(.SnowParam, prototype)
 })
 
-## manager interface
+### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+### task dispatching interface
+###
 setOldClass("SOCKmanager")
 setMethod(
     ".manager", "SOCKcluster",
@@ -379,7 +381,7 @@ setMethod(
     id <- as.integer(worker)
     if (value$type == "EXEC") {
         if (manager$initialized[id])
-            value <- .strip_EXEC(value)
+            value <- .EXEC_dynamic(value)
         else 
             manager$initialized[id] <- TRUE 
     }
@@ -391,12 +393,26 @@ setMethod(
 
 setMethod(
     ".manager_cleanup", "SOCKmanager",
-    function(manager) {
-        manager <- callNextMethod()
-        manager$initialized <- rep(FALSE, manager$capacity)
-        manager
-    }
-)
+    function(manager) 
+{
+    manager <- callNextMethod()
+    manager$initialized <- rep(FALSE, manager$capacity)
+    value <- .EXEC(tag = NULL, .cleanup_EXEC_static, args = NULL)
+    .send_all(manager$backend, value)
+    msg <- .revc_all(manager$backend)
+    manager
+})
+
+setMethod(".recv", "SOCKnode", 
+    function(worker)
+{
+    msg <- callNextMethod()
+    ## read/write the static value(if any)
+    if (msg$type == "EXEC")
+      msg <- .load_EXEC_static(msg)
+    msg
+})
+
 
 ### MPIcluster
 

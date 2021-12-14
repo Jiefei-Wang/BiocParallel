@@ -1,7 +1,26 @@
 ### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ### Utils
-## Remove the static data from EXEC
-.strip_EXEC <- function(EXEC) {
+.EXEC_static <- function(EXEC) 
+{
+    if (EXEC$static.fun)
+        fun <- EXEC$fun
+    else
+        fun <- NULL
+    
+    if (length(EXEC$static.args) && 
+        all(EXEC$static.args%in%names(EXEC$args)))
+        args <- EXEC$args[EXEC$static.args]
+    else
+        args <- NULL
+    
+    if (!is.null(fun) || !is.null(args))
+        list(fun = fun, args = args)
+    else 
+        NULL
+}
+
+.EXEC_dynamic <- function(EXEC) 
+{
     if (EXEC$static.fun)
         EXEC$fun <- NULL
     if (length(EXEC$static.args))
@@ -11,23 +30,19 @@
 
 ## read/write the static value
 .load_EXEC_static <- function(EXEC) {
-    if (EXEC$static.fun) {
-        if (is.null(EXEC$fun))
-            EXEC$fun <- options("BP_STATIC_FUN")[[1]]
-        else
-            options("BP_STATIC_FUN" = EXEC$fun)
-    }
-    
-    if (length(EXEC$static.args)) {
-        if (is.null(EXEC$args[[EXEC$static.args[[1]]]]))
-            EXEC$args[EXEC$static.args] <- options("BP_STATIC_ARGS")[[1]]
-        else
-            options("BP_STATIC_ARGS" = EXEC$args[EXEC$static.args])
+    static.EXEC <- .EXEC_static(EXEC)
+    if(is.null(static.EXEC)) {
+        static.EXEC <- options("BIOCPARALLEL_STATIC_EXEC")[[1]]
+        EXEC <- .EXEC(dynamic.EXEC = EXEC, static.EXEC = static.EXEC)
+    } else {
+        options(BIOCPARALLEL_STATIC_EXEC = static.EXEC)
     }
     EXEC
 }
 
-
+.cleanup_EXEC_static <- function(){
+    options(BIOCPARALLEL_STATIC_EXEC = NULL)
+}
 ### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ### Worker commands
 
@@ -35,12 +50,22 @@
 ### Derived from snow version 0.3-13 by Luke Tierney
 ### Derived from parallel version 2.16.0 by R Core Team
 .EXEC <-
-    function(tag, fun, args, static.fun = FALSE, static.args = NULL)
+    function(tag, fun, args, static.fun = FALSE, static.args = NULL, 
+             static.EXEC = NULL, dynamic.EXEC = NULL)
 {
-    list(type = "EXEC", tag = tag, fun = fun, 
-         args = args, 
-         static.fun = static.fun, 
-         static.args = static.args)
+    if(is.null(static.EXEC) && is.null(static.EXEC)) {
+        list(type = "EXEC", tag = tag, fun = fun, 
+             args = args, 
+             static.fun = static.fun, 
+             static.args = static.args)
+    } else {
+        EXEC <- dynamic.EXEC
+        if (EXEC$static.fun)
+            EXEC$fun <- static.EXEC$fun
+        if(length(EXEC$static.args))
+            EXEC$args[EXEC$static.args] <- static.EXEC$args[EXEC$static.args]
+        EXEC
+    }
 }
 
 .VALUE <-
@@ -189,9 +214,6 @@
         sink(file, type="message")
         sink(file, type="output")
     }
-    
-    ## read/write the static value(if any)
-    msg <- .load_EXEC_static(msg)
     
     t1 <- proc.time()
     value <- tryCatch({
