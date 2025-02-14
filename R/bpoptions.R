@@ -58,11 +58,10 @@
     ## find the common parameters both BPPARAM and BPOPTIONS
     paramOptions <- intersect(names(registeredOptions), optionNames)
     getterNames <- unlist(registeredOptions[paramOptions])
-    setNames(lapply(
-        getterNames,
-        do.call,
-        args = list(BPPARAM)
-    ), paramOptions)
+    result <- vector("list", length(getterNames))
+    for (i in seq_along(getterNames))
+        result[[i]] = do.call(getterNames[[i]], list(BPPARAM))
+    setNames(result, paramOptions)
 }
 
 ## value: BPOPTIONS
