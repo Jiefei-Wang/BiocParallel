@@ -60,7 +60,7 @@
     getterNames <- unlist(registeredOptions[paramOptions])
     result <- vector("list", length(getterNames))
     for (i in seq_along(getterNames))
-        result[[i]] = do.call(getterNames[[i]], list(BPPARAM))
+        result[i] <- list(do.call(getterNames[[i]], list(BPPARAM)))
     setNames(result, paramOptions)
 }
 
