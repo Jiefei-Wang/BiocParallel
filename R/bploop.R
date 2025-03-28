@@ -1,4 +1,17 @@
 ### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+### utils
+
+## a reserved value to represent a NULL value in X in bplapply
+.bp_null <- function(){
+    structure(list(), class = "bp_null")
+}
+
+.is_bp_null <- function(x){
+    inherits(x, "bp_null")
+}
+
+
+### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ### Manager loop used by SOCK, MPI and FORK
 
 ## collect the results from the workers
@@ -81,6 +94,12 @@
 .bploop_lapply_iter <-
     function(X, redo_index, elements_per_task)
 {
+    ## replace the user-provided NULL with a reserved NULL
+    null_indices <- which(vapply(X, is.null, logical(1)))
+    for (null_index in null_indices) {
+        X[[null_index]] <- .bp_null()
+    }
+
     redo_n <- length(redo_index)
     redo_i <- 1L
     x_n <- length(X)
@@ -270,6 +289,13 @@
                     warning("first invocation of 'ITER()' returned NULL")
                 break
             }
+
+            ## Replace the reserved NULL value with a real NULL
+            null_indices <- which(vapply(value, .is_bp_null, logical(1)))
+            for (null_index in null_indices) {
+                value[null_index] <- list(NULL)
+            }
+
             args <- ARGFUN(value, seed)
             task <- .EXEC(
                 total + 1L, .workerLapply,
