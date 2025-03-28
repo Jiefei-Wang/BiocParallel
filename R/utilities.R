@@ -129,3 +129,26 @@
         timeout <- Inf
     timeout
 }
+
+## This function walks through a nested list and attempts to trigger
+## loading of any encountered S4 class definitions using getClassDef().
+## 
+## Limitations:
+## - It does NOT guarantee that all required packages will be loaded,
+##   because S4 objects may be hidden in attributes, environments, or other
+##   non-list structures that are not traversed here.
+.autoload_s4_classes <- function(obj) {
+    seen <- character()
+    recurse <- function(x) {
+        if (isS4(x)) {
+            cl <- class(x)
+            if (!cl %in% seen) {
+                seen <<- c(seen, cl)
+                methods::getClassDef(cl)
+            }
+        } else if (is.list(x)) {
+            lapply(x, recurse)
+        }
+    }
+    recurse(obj)
+}
