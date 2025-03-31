@@ -1,0 +1,4 @@
+Files included in src/boost_patch_1_87 are modifed from the Boost
+'interprocess' C++ library, and are licensed under the Boost Software
+License - Version 1.0. A copy of this license is included as
+'LICENSE_1_0.txt'.
