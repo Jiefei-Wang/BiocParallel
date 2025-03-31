@@ -1,7 +1,7 @@
 Package: BiocParallel
 Type: Package
 Title: Bioconductor facilities for parallel evaluation
-Version: 1.41.4
+Version: 1.41.5
 Authors@R: c(
     person("Martin", "Morgan",
         email = "mtmorgan.bioc@gmail.com",
@@ -32,7 +32,7 @@ Description: This package provides modified versions and novel
 URL: https://github.com/Bioconductor/BiocParallel
 BugReports: https://github.com/Bioconductor/BiocParallel/issues
 biocViews: Infrastructure
-License: GPL-2 | GPL-3
+License: GPL-2 | GPL-3 | BSL-1.0
 SystemRequirements: C++11
 Depends: methods, R (>= 4.1.0)
 Imports: stats, utils, futile.logger, parallel, snow, codetools
