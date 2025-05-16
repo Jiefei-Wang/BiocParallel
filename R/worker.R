@@ -311,6 +311,9 @@
 
     t1 <- proc.time()
     value <- tryCatch({
+        ## Lazy loading causes some packages fail to load in the worker
+        ## environment. This works in 99% cases (see function comments).
+        .autoload_s4_classes(msg$data$args$X)
         do.call(msg$data$fun, msg$data$args)
     }, error=function(e) {
         ## return as 'list()' because msg$fun has lapply semantics
