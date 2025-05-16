@@ -1,3 +1,12 @@
+CHANGES IN VERSION 1.44
+-----------------------
+
+NEW FEATURES
+
+    o (1.43.1) Support NULL return value from bplapply. see
+    <https://github.com/Bioconductor/BiocParallel/issues/267>
+    <https://github.com/Bioconductor/BiocParallel/pull/269>
+
 CHANGES IN VERSION 1.42
 -----------------------
 
