@@ -1,12 +1,12 @@
 Package: BiocParallel
 Type: Package
 Title: Bioconductor facilities for parallel evaluation
-Version: 1.43.3
+Version: 1.43.4
 Authors@R: c(
-    person("Martin", "Morgan",
-        email = "mtmorgan.bioc@gmail.com",
-        role=c("aut", "cre")),
-    person("Jiefei", "Wang", role = "aut"),
+    person("Jiefei", "Wang", 
+        email = "jiefei0804@gmail.com", 
+        role = c("aut", "cre")),
+    person("Martin", "Morgan", email = "mtmorgan.bioc@gmail.com", role="aut"),
     person("Valerie", "Obenchain", role="aut"),
     person("Michel", "Lang", email="michellang@gmail.com", role="aut"),
     person("Ryan", "Thompson", email="rct@thompsonclan.org", role="aut"),
